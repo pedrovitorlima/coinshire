@@ -61,13 +61,28 @@ function App() {
     }
   }
 
+  // Robust reload from start that does not rely on stale state closures
+  async function reloadFromStart() {
+    setLoading(true);
+    try {
+      const res = await api.expenses({ limit: PAGE_SIZE, offset: 0 });
+      const batch = res.expenses as Expense[];
+      setItems(batch);
+      const got = batch.length;
+      setOffset(got);
+      setHasMore(got >= PAGE_SIZE);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Reset when switching user
   useEffect(() => {
     setItems([]);
     setOffset(0);
     setHasMore(true);
     Promise.all([loadUsers(), loadBalance(selectedUserId)])
-      .then(() => loadMore())
+      .then(() => reloadFromStart())
       .catch(console.error);
   }, [selectedUserId]);
 
@@ -109,12 +124,9 @@ function App() {
 
   const addExpense = async ({ description, total, paidBy, payerSharePct }: AddExpensePayload) => {
     await api.createExpense({ description, total, paidBy, payerSharePct });
-    // Reset and load from start to reflect new item at the top
-    setItems([]);
-    setOffset(0);
-    setHasMore(true);
+    // Reload from start to reflect new item and recompute balance
     await loadBalance(selectedUserId);
-    await loadMore();
+    await reloadFromStart();
   };
 
   const bg = mode === 'user_1' ? 'rgba(137, 207, 240, 0.18)' : 'rgba(255, 192, 203, 0.18)';
@@ -127,12 +139,8 @@ function App() {
 
   const handleDelete = async (id: string) => {
     await api.deleteExpense(id);
-    // Reload list and balance to reflect deletion
-    setItems([]);
-    setOffset(0);
-    setHasMore(true);
     await loadBalance(selectedUserId);
-    await loadMore();
+    await reloadFromStart();
   };
 
   return (

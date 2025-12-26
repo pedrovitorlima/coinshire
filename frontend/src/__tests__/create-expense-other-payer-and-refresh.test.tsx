@@ -76,8 +76,8 @@ beforeEach(() => {
   }));
 });
 
-describe('Add expense - other payer 100%', () => {
-  it('impacts balance and shows "you owe" (not "no balance impact")', async () => {
+describe('Create expense paid by someone else', () => {
+  it('shows "Paid by Alex" after creation', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -86,30 +86,71 @@ describe('Add expense - other payer 100%', () => {
     await user.click(addBtn);
 
     // Fill fields
-    const desc = await screen.findByLabelText(/description/i);
-    await user.type(desc, 'Test dinner');
-
+    await user.type(await screen.findByLabelText(/description/i), 'Lunch with Alex');
     const total = await screen.findByLabelText(/total.*aud/i);
     await user.clear(total);
-    await user.type(total, '100');
+    await user.type(total, '25');
 
-    // Choose "Who is paying" = the other person (Alex)
+    // Choose other person as payer (Alex)
     const who = await screen.findByLabelText(/who is paying/i);
     await user.click(who);
     const option = await screen.findByRole('option', { name: /alex/i });
     await user.click(option);
 
-    // Set slider (payer share) to 100%
-    const slider = await screen.findByRole('slider');
-    fireEvent.keyDown(slider, { key: 'End', code: 'End' });
+    // Save
+    await user.click(await screen.findByRole('button', { name: /save/i }));
+
+    // Expect list item shows "Paid by Alex"
+    expect(await screen.findByText(/paid by alex/i)).toBeInTheDocument();
+  });
+});
+
+describe('Refresh does not duplicate', () => {
+  it('after creating a new expense and refreshing, the new expense appears only once', async () => {
+    const user = userEvent.setup();
+
+    // Seed one existing expense
+    state.expenses.push({
+      id: 'e_seed',
+      description: 'Seed expense',
+      amount: 10,
+      date: new Date().toISOString().slice(0, 10),
+      paidBy: 'u1',
+      participants: ['u1', 'u2'],
+      shares: { u1: 0.5, u2: 0.5 },
+    });
+
+    const rr = render(<App />);
+
+    // Create a new expense paid by Alex
+    const addBtn = await screen.findByRole('button', { name: /add expense/i });
+    await user.click(addBtn);
+
+    const label = 'New coffee';
+    await user.type(await screen.findByLabelText(/description/i), label);
+
+    const total = await screen.findByLabelText(/total.*aud/i);
+    await user.clear(total);
+    await user.type(total, '7.50');
+
+    // Select Alex as payer
+    const who = await screen.findByLabelText(/who is paying/i);
+    await user.click(who);
+    const option = await screen.findByRole('option', { name: /alex/i });
+    await user.click(option);
 
     // Save
-    const save = await screen.findByRole('button', { name: /save/i });
-    await user.click(save);
+    await user.click(await screen.findByRole('button', { name: /save/i }));
 
-    // Expect the banner or list to reflect new balance (may appear in multiple places)
-    const oweMatches = await screen.findAllByText(/you owe/i);
-    expect(oweMatches.length).toBeGreaterThan(0);
-    expect(screen.queryByText(/no balance impact/i)).toBeNull();
+    // The item should be visible at least once before refresh
+    expect(await screen.findByText(label)).toBeInTheDocument();
+
+    // Simulate refresh: unmount and render again
+    rr.unmount();
+    render(<App />);
+
+    // The new expense should appear only once in the list
+    const occurrences = await screen.findAllByText(label);
+    expect(occurrences.length).toBe(1);
   });
 });

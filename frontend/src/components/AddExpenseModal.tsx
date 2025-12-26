@@ -37,35 +37,38 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
   const [description, setDescription] = useState<string>('');
   const [total, setTotal] = useState<string>('');
   const [paidBy, setPaidBy] = useState<string>(defaultPayerId);
-  const [payerSharePct, setPayerSharePct] = useState<number>(60);
+  const [sliderPct, setSliderPct] = useState<number>(60);
 
   useEffect(() => {
     if (isOpen) {
       setDescription('');
       setTotal('');
       setPaidBy(defaultPayerId);
-      setPayerSharePct(60);
+      setSliderPct(60);
     }
   }, [isOpen, defaultPayerId]);
 
   const totalNum = Number(total || 0);
-  const otherSharePct = 100 - payerSharePct;
+  const payerIsYou = paidBy === defaultPayerId;
+
+  // Interpret slider as: if you are paying, slider = Other's share; else slider = Your share
+  const youPct = payerIsYou ? 100 - sliderPct : sliderPct;
+  const otherPct = 100 - youPct;
 
   const preview = useMemo(() => {
-    const payerAmount = (totalNum * payerSharePct) / 100;
-    const otherAmount = totalNum - payerAmount;
-    return { payerAmount, otherAmount };
-  }, [totalNum, payerSharePct]);
+    const youAmount = (totalNum * youPct) / 100;
+    const otherAmount = totalNum - youAmount;
+    return { youAmount, otherAmount };
+  }, [totalNum, youPct]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const t = Number(total);
     if (!description.trim() || !isFinite(t) || t <= 0) return;
-    // Interpret slider as "your share" percentage (for the currently selected user)
-    // Convert to payerSharePct for the API: if you are the payer, payerSharePct = yourShare;
-    // if the other is the payer, payerSharePct = 100 - yourShare.
-    const yourSharePct = payerSharePct;
-    const effectivePayerSharePct = paidBy === defaultPayerId ? yourSharePct : 100 - yourSharePct;
+    // Slider represents Other's share when you are paying; Your share when the other is paying.
+    // API expects payerSharePct = payer's share.
+    // In both cases, payerSharePct = 100 - sliderPct.
+    const effectivePayerSharePct = 100 - sliderPct;
     onSubmit({ description: description.trim(), total: t, paidBy, payerSharePct: effectivePayerSharePct });
     onClose();
   };
@@ -109,18 +112,18 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
 
           <div>
             <Typography variant="subtitle2" gutterBottom>
-              Your share: {payerSharePct}%
+              {payerIsYou ? "Other's share" : 'Your share'}: {sliderPct}%
             </Typography>
             <Slider
-              value={payerSharePct}
-              onChange={(_, v) => setPayerSharePct(v as number)}
+              value={sliderPct}
+              onChange={(_, v) => setSliderPct(v as number)}
               step={1}
               min={0}
               max={100}
               valueLabelDisplay="auto"
             />
             <Typography variant="body2" color="text.secondary">
-              You: {payerSharePct}% {totalNum ? `(${formatCurrency(preview.payerAmount)})` : ''} · Other: {otherSharePct}% {totalNum ? `(${formatCurrency(preview.otherAmount)})` : ''}
+              You: {youPct}% {totalNum ? `(${formatCurrency(preview.youAmount)})` : ''} · Other: {otherPct}% {totalNum ? `(${formatCurrency(preview.otherAmount)})` : ''}
             </Typography>
           </div>
         </Stack>
