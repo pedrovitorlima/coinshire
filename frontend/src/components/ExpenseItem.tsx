@@ -21,8 +21,8 @@ export default function ExpenseItem({ expense, users, currentUserId, deltaForCur
 
   let relation = '';
   let color: 'success' | 'error' | 'default' = 'default';
-  if (deltaForCurrentUser > 0) { relation = `you lent ${formatCurrency(Math.abs(deltaForCurrentUser))}`; color = 'success'; }
-  else if (deltaForCurrentUser < 0) { relation = `you owe ${formatCurrency(Math.abs(deltaForCurrentUser))}`; color = 'error'; }
+  if (deltaForCurrentUser > 0) { relation = `lent ${formatCurrency(Math.abs(deltaForCurrentUser))}`; color = 'success'; }
+  else if (deltaForCurrentUser < 0) { relation = `owe ${formatCurrency(Math.abs(deltaForCurrentUser))}`; color = 'error'; }
   else relation = youPaid ? 'settled (you paid your share)' : youParticipated ? 'no balance impact' : 'not involved';
 
   const date = new Date(expense.date).toLocaleDateString();

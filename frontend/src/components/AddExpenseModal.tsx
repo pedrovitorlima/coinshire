@@ -51,8 +51,7 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
   const totalNum = Number(total || 0);
   const payerIsYou = paidBy === defaultPayerId;
 
-  // Interpret slider as: if you are paying, slider = Other's share; else slider = Your share
-  const youPct = payerIsYou ? 100 - sliderPct : sliderPct;
+  const youPct = payerIsYou ? sliderPct : 100 - sliderPct;
   const otherPct = 100 - youPct;
 
   const preview = useMemo(() => {
@@ -112,7 +111,7 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
 
           <div>
             <Typography variant="subtitle2" gutterBottom>
-              {payerIsYou ? "Other's share" : 'Your share'}: {sliderPct}%
+              {payerIsYou ? "Your share" : "Other's share"}: {sliderPct}%
             </Typography>
             <Slider
               value={sliderPct}
