@@ -125,6 +125,16 @@ function App() {
     setByExpense(byExpense);
   }, [items, selectedUserId]);
 
+  const handleDelete = async (id: string) => {
+    await api.deleteExpense(id);
+    // Reload list and balance to reflect deletion
+    setItems([]);
+    setOffset(0);
+    setHasMore(true);
+    await loadBalance(selectedUserId);
+    await loadMore();
+  };
+
   return (
     <div className="app" style={{ backgroundColor: bg, minHeight: '100vh' }}>
       <Banner netBalance={net} onAddExpense={() => setModalOpen(true)} mode={mode} onModeChange={setMode} />
@@ -134,6 +144,7 @@ function App() {
           users={users}
           currentUserId={selectedUserId}
           deltas={byExpense}
+          onDelete={handleDelete}
         />
         <div ref={bottomRef} style={{ height: 1 }} />
       </main>

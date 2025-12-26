@@ -7,9 +7,10 @@ interface ExpensesListProps {
   users: User[];
   currentUserId: string;
   deltas: Record<string, number>; // expenseId -> delta
+  onDelete?: (id: string) => void;
 }
 
-export default function ExpensesList({ expenses, users, currentUserId, deltas }: ExpensesListProps) {
+export default function ExpensesList({ expenses, users, currentUserId, deltas, onDelete }: ExpensesListProps) {
   return (
     <section className="expenses">
       <Typography variant="overline" color="text.secondary">Recent expenses</Typography>
@@ -21,6 +22,7 @@ export default function ExpensesList({ expenses, users, currentUserId, deltas }:
             users={users}
             currentUserId={currentUserId}
             deltaForCurrentUser={deltas[e.id] ?? 0}
+            onDelete={onDelete}
           />
         ))}
       </Stack>

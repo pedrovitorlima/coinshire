@@ -23,6 +23,11 @@ async function post<T>(path: string, body: any): Promise<T> {
   return res.json();
 }
 
+async function del(path: string): Promise<void> {
+  const res = await fetch(`${base}${path}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
+}
+
 export const api = {
   async users() {
     return get<{ users: Array<{ id: string; name: string }>; currentUserId: string }>(`/users`);
@@ -39,5 +44,8 @@ export const api = {
   },
   async createExpense(body: AddExpenseBody) {
     return post(`/expenses`, body);
+  },
+  async deleteExpense(id: string) {
+    return del(`/expenses/${encodeURIComponent(id)}`);
   },
 };

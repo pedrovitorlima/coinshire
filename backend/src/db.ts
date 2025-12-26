@@ -93,3 +93,8 @@ export async function insertExpense(newExp: Expense): Promise<void> {
     ]
   );
 }
+
+export async function deleteExpense(id: string): Promise<number> {
+  const res = await pool.query('DELETE FROM expenses WHERE id = $1', [id]);
+  return res.rowCount ?? 0;
+}

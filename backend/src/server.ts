@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { getUsers, getExpenses, insertExpense, currentUserId } from './db.js';
+import { getUsers, getExpenses, insertExpense, currentUserId, deleteExpense } from './db.js';
 import { computeBalance } from './balance.js';
 import type { Expense } from './types.js';
 
@@ -86,6 +86,20 @@ app.post('/api/expenses', async (req, res) => {
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create expense' });
+  }
+});
+
+// Delete expense
+app.delete('/api/expenses/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) return res.status(400).json({ error: 'Missing id' });
+    const deleted = await deleteExpense(id);
+    if (deleted === 0) return res.status(404).json({ error: 'Not found' });
+    return res.status(204).send();
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete expense' });
   }
 });
 
