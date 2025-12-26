@@ -77,7 +77,7 @@ beforeEach(() => {
 });
 
 describe('Create expense paid by someone else', () => {
-  it('shows "Paid by Alex" after creation', async () => {
+  it('shows "Paid by Alex" after creation and renders date on the left, details in the middle', async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -86,7 +86,8 @@ describe('Create expense paid by someone else', () => {
     await user.click(addBtn);
 
     // Fill fields
-    await user.type(await screen.findByLabelText(/description/i), 'Lunch with Alex');
+    const label = 'Lunch with Alex';
+    await user.type(await screen.findByLabelText(/description/i), label);
     const total = await screen.findByLabelText(/total.*aud/i);
     await user.clear(total);
     await user.type(total, '25');
@@ -102,6 +103,22 @@ describe('Create expense paid by someone else', () => {
 
     // Expect list item shows "Paid by Alex"
     expect(await screen.findByText(/paid by alex/i)).toBeInTheDocument();
+
+    // Check layout: date on the left, details (description + Paid by) in the middle
+    const items = await screen.findAllByTestId('expense-item');
+    expect(items.length).toBeGreaterThan(0);
+    const first = items[0];
+
+    const dateEl = within(first).getByTestId('expense-date');
+    const detailsEl = within(first).getByTestId('expense-details');
+
+    // Date matches today's date for created expense
+    const expectedDate = new Date().toLocaleDateString();
+    expect(within(dateEl).getByText(expectedDate)).toBeInTheDocument();
+
+    // Details contain description and "Paid by Alex"
+    expect(within(detailsEl).getByText(label)).toBeInTheDocument();
+    expect(within(detailsEl).getByText(/paid by alex/i)).toBeInTheDocument();
   });
 });
 

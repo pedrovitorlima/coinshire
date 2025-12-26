@@ -2,6 +2,7 @@ import type { Expense, User } from '../types';
 import { formatCurrency } from '../utils/money';
 import { Paper, Box, Typography, Chip, IconButton, Tooltip } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { USER1_NAME, USER2_NAME } from '../config';
 
 type ExpenseItemProps = {
   expense: Expense;
@@ -12,7 +13,8 @@ type ExpenseItemProps = {
 };
 
 export default function ExpenseItem({ expense, users, currentUserId, deltaForCurrentUser, onDelete }: ExpenseItemProps) {
-  const payer = users.find((u) => u.id === expense.paidBy)?.name ?? 'Unknown';
+  // Use names from config (.env) to identify payer consistently
+  const payer = expense.paidBy === 'u1' ? USER1_NAME : expense.paidBy === 'u2' ? USER2_NAME : (users.find((u) => u.id === expense.paidBy)?.name ?? 'Unknown');
 
   const youPaid = expense.paidBy === currentUserId;
   const youParticipated = expense.participants.includes(currentUserId);
@@ -31,13 +33,19 @@ export default function ExpenseItem({ expense, users, currentUserId, deltaForCur
   };
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-      <Box>
-        <Typography variant="subtitle1" fontWeight={600}>{expense.description}</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {date} • Paid by {youPaid ? 'you' : payer}
-        </Typography>
+    <Paper data-testid="expense-item" variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+      {/* Left: date */}
+      <Box data-testid="expense-date" sx={{ minWidth: 96, textAlign: 'left' }}>
+        <Typography variant="body2" color="text.secondary">{date}</Typography>
       </Box>
+
+      {/* Middle: description and payer */}
+      <Box data-testid="expense-details" sx={{ flex: 1 }}>
+        <Typography variant="subtitle1" fontWeight={600}>{expense.description}</Typography>
+        <Typography variant="body2" color="text.secondary">Paid by {youPaid ? 'you' : payer}</Typography>
+      </Box>
+
+      {/* Right: amount, delete, balance chip */}
       <Box textAlign="right" minWidth={220} display="flex" flexDirection="column" gap={1}>
         <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
           <Typography variant="subtitle1" fontWeight={700}>{formatCurrency(expense.amount)}</Typography>
