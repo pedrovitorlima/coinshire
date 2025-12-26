@@ -9,13 +9,23 @@ import { api } from './api';
 import type { Mode } from './config';
 import { computeBalance } from './utils/balance';
 
+function parseModeFromUrl(): Mode | null {
+  const params = new URLSearchParams(window.location.search);
+  const user = params.get('user');
+  if (!user) return null;
+  const v = user.toLowerCase();
+  if (v === '1' || v === 'u1' || v === 'user_1') return 'user_1';
+  if (v === '2' || v === 'u2' || v === 'user_2') return 'user_2';
+  return null;
+}
+
 function App() {
   const [items, setItems] = useState<Expense[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [net, setNet] = useState<number>(0);
   const [byExpense, setByExpense] = useState<Record<string, number>>({});
   const [modalOpen, setModalOpen] = useState(false);
-  const [mode, setMode] = useState<Mode>('user_1');
+  const [mode, setMode] = useState<Mode>(() => parseModeFromUrl() ?? 'user_1');
 
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -60,6 +70,27 @@ function App() {
       .then(() => loadMore())
       .catch(console.error);
   }, [selectedUserId]);
+
+  // Sync URL ?user=1 or ?user=2 with selected mode
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const desired = mode === 'user_1' ? '1' : '2';
+    if (params.get('user') !== desired) {
+      params.set('user', desired);
+      const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [mode]);
+
+  // Listen to back/forward navigation and update mode from URL
+  useEffect(() => {
+    const handler = () => {
+      const m = parseModeFromUrl();
+      if (m) setMode(m);
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
 
   // Infinite scroll observer
   useEffect(() => {
