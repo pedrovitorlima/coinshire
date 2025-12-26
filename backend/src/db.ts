@@ -55,11 +55,18 @@ export async function getUsers(): Promise<User[]> {
   return rows.map((r) => ({ id: r.id, name: r.name }));
 }
 
-export async function getExpenses(limit?: number): Promise<Expense[]> {
-  const sql = `SELECT id, description, amount, date, paid_by, participants, shares FROM expenses ORDER BY date DESC ${
-    typeof limit === 'number' ? 'LIMIT $1' : ''
-  }`;
-  const { rows } = await pool.query(sql, typeof limit === 'number' ? [limit] : []);
+export async function getExpenses(limit?: number, offset?: number): Promise<Expense[]> {
+  let sql = `SELECT id, description, amount, date, paid_by, participants, shares FROM expenses ORDER BY date DESC, id DESC`;
+  const params: any[] = [];
+  if (typeof limit === 'number') {
+    params.push(limit);
+    sql += ` LIMIT $${params.length}`;
+  }
+  if (typeof offset === 'number' && offset > 0) {
+    params.push(offset);
+    sql += ` OFFSET $${params.length}`;
+  }
+  const { rows } = await pool.query(sql, params);
   return rows.map((r: any) => ({
     id: r.id,
     description: r.description,

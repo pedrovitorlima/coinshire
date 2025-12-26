@@ -27,8 +27,11 @@ export const api = {
   async users() {
     return get<{ users: Array<{ id: string; name: string }>; currentUserId: string }>(`/users`);
   },
-  async expenses() {
-    return get<{ expenses: any[] }>(`/expenses`);
+  async expenses(params?: { limit?: number; offset?: number }) {
+    const limit = params?.limit ?? 50;
+    const offset = params?.offset ?? 0;
+    const q = `?limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(String(offset))}`;
+    return get<{ expenses: any[] }>(`/expenses${q}`);
   },
   async balance(userId?: string) {
     const q = userId ? `?userId=${encodeURIComponent(userId)}` : '';

@@ -26,7 +26,8 @@ app.get('/api/users', async (_req, res) => {
 app.get('/api/expenses', async (req, res) => {
   try {
     const limit = Number(req.query.limit ?? 50);
-    const data = await getExpenses(limit);
+    const offset = Number(req.query.offset ?? 0);
+    const data = await getExpenses(limit, offset);
     res.json({ expenses: data });
   } catch (err: any) {
     console.error(err);
@@ -38,7 +39,7 @@ app.get('/api/expenses', async (req, res) => {
 app.get('/api/balance', async (req, res) => {
   try {
     const userId = (req.query.userId as string) || currentUserId;
-    const items = await getExpenses();
+    const items = await getExpenses(undefined, undefined); // all for balance
     const bal = computeBalance(userId, items);
     res.json(bal);
   } catch (err: any) {

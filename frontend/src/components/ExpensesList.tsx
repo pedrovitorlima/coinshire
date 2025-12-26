@@ -10,12 +10,11 @@ interface ExpensesListProps {
 }
 
 export default function ExpensesList({ expenses, users, currentUserId, deltas }: ExpensesListProps) {
-  const sorted = [...expenses].sort((a, b) => b.date.localeCompare(a.date));
   return (
     <section className="expenses">
       <Typography variant="overline" color="text.secondary">Recent expenses</Typography>
       <Stack spacing={1} sx={{ mt: 1 }}>
-        {sorted.map((e) => (
+        {expenses.map((e) => (
           <ExpenseItem
             key={e.id}
             expense={e}
