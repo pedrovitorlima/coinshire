@@ -1,0 +1,11 @@
+# Reduce build context size and avoid host deps polluting image
+node_modules
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+.DS_Store
+.git
+.gitignore
+dist
+coverage
+.env

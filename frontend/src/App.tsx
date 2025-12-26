@@ -7,6 +7,7 @@ import type { AddExpensePayload } from './components/AddExpenseModal';
 import type { Expense, User } from './types';
 import { api } from './api';
 import type { Mode } from './config';
+import { computeBalance } from './utils/balance';
 
 function App() {
   const [items, setItems] = useState<Expense[]>([]);
@@ -33,7 +34,6 @@ function App() {
   async function loadBalance(forUserId: string) {
     const b = await api.balance(forUserId);
     setNet(b.net);
-    setByExpense(b.byExpense);
   }
 
   async function loadMore() {
@@ -87,6 +87,12 @@ function App() {
   };
 
   const bg = mode === 'user_1' ? 'rgba(137, 207, 240, 0.18)' : 'rgba(255, 192, 203, 0.18)';
+
+  // Recompute per-expense deltas on the client for the displayed page(s)
+  useEffect(() => {
+    const { byExpense } = computeBalance(selectedUserId, items);
+    setByExpense(byExpense);
+  }, [items, selectedUserId]);
 
   return (
     <div className="app" style={{ backgroundColor: bg, minHeight: '100vh' }}>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { User } from '../types';
+import { USER1_NAME, USER2_NAME } from '../config';
 import { formatCurrency } from '../utils/money';
 import {
   Dialog,
@@ -60,7 +61,12 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
     e.preventDefault();
     const t = Number(total);
     if (!description.trim() || !isFinite(t) || t <= 0) return;
-    onSubmit({ description: description.trim(), total: t, paidBy, payerSharePct });
+    // Interpret slider as "your share" percentage (for the currently selected user)
+    // Convert to payerSharePct for the API: if you are the payer, payerSharePct = yourShare;
+    // if the other is the payer, payerSharePct = 100 - yourShare.
+    const yourSharePct = payerSharePct;
+    const effectivePayerSharePct = paidBy === defaultPayerId ? yourSharePct : 100 - yourSharePct;
+    onSubmit({ description: description.trim(), total: t, paidBy, payerSharePct: effectivePayerSharePct });
     onClose();
   };
 
@@ -94,16 +100,16 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
               value={paidBy}
               onChange={(e) => setPaidBy(e.target.value)}
             >
-              <MenuItem value={defaultPayerId}>Myself</MenuItem>
+              <MenuItem value={defaultPayerId}>{defaultPayerId === 'u1' ? USER1_NAME : USER2_NAME} (you)</MenuItem>
               {users.find((u) => u.id !== defaultPayerId) && (
-                <MenuItem value={users.find((u) => u.id !== defaultPayerId)!.id}>The other</MenuItem>
+                <MenuItem value={users.find((u) => u.id !== defaultPayerId)!.id}>{defaultPayerId === 'u1' ? USER2_NAME : USER1_NAME}</MenuItem>
               )}
             </Select>
           </FormControl>
 
           <div>
             <Typography variant="subtitle2" gutterBottom>
-              Payer share: {payerSharePct}%
+              Your share: {payerSharePct}%
             </Typography>
             <Slider
               value={payerSharePct}
@@ -114,7 +120,7 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
               valueLabelDisplay="auto"
             />
             <Typography variant="body2" color="text.secondary">
-              Payer: {payerSharePct}% {totalNum ? `(${formatCurrency(preview.payerAmount)})` : ''} · Other: {otherSharePct}% {totalNum ? `(${formatCurrency(preview.otherAmount)})` : ''}
+              You: {payerSharePct}% {totalNum ? `(${formatCurrency(preview.payerAmount)})` : ''} · Other: {otherSharePct}% {totalNum ? `(${formatCurrency(preview.otherAmount)})` : ''}
             </Typography>
           </div>
         </Stack>
