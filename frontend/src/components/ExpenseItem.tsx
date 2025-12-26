@@ -46,7 +46,7 @@ export default function ExpenseItem({ expense, users, currentUserId, deltaForCur
       </Box>
 
       {/* Right: amount, delete, balance chip */}
-      <Box textAlign="right" minWidth={220} display="flex" flexDirection="column" gap={1}>
+      <Box textAlign="right" minWidth={110} display="flex" flexDirection="column" gap={1}>
         <Box display="flex" alignItems="center" justifyContent="flex-end" gap={0.5}>
           <Typography variant="subtitle1" fontWeight={700}>{formatCurrency(expense.amount)}</Typography>
           <Tooltip title="Delete">
