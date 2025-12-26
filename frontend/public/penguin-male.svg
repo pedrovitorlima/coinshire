@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Male Penguin">
+  <defs>
+    <linearGradient id="b" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#3b3f46"/>
+      <stop offset="100%" stop-color="#1f2329"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" fill-rule="evenodd">
+    <circle cx="64" cy="64" r="62" fill="#e5f3ff"/>
+    <g transform="translate(24 16)">
+      <ellipse cx="40" cy="76" rx="22" ry="8" fill="#000" opacity=".1"/>
+      <path d="M40 0c17 0 28 15 28 34v20c0 18-13 30-28 30S12 72 12 54V34C12 15 23 0 40 0z" fill="url(#b)"/>
+      <path d="M40 10c12.5 0 20 11 20 23v18c0 13-9 22-20 22s-20-9-20-22V33C20 21 27.5 10 40 10z" fill="#fff"/>
+      <circle cx="32" cy="36" r="4" fill="#111"/>
+      <circle cx="48" cy="36" r="4" fill="#111"/>
+      <path d="M40 44l8 6-8 2-8-2 8-6z" fill="#ffb300"/>
+      <path d="M26 68c4 3 9 5 14 5s10-2 14-5" stroke="#ffb300" stroke-width="4" stroke-linecap="round"/>
+      <!-- Bow tie for male -->
+      <path d="M40 20l8 4-8 4-8-4 8-4z" fill="#2563eb"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,52 @@
+version: '3.9'
+name: coinshire
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: coinshire
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "3022:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coinshire"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    image: coinshire-backend:latest
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgres://postgres:postgres@db:5432/coinshire
+    ports:
+      - "3021:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_USER1_NAME: ${VITE_USER1_NAME:-You}
+        VITE_USER2_NAME: ${VITE_USER2_NAME:-Alex}
+    image: coinshire-frontend:latest
+    ports:
+      - "3020:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    # For local dev via container with Vite (optional):
+    # volumes:
+    #   - ./frontend:/app
+    #   - /app/node_modules
+    # command: ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0 --port 80"]
+
+volumes:
+  pgdata:
