@@ -37,12 +37,12 @@ export default function ExpenseItem({ expense, users, currentUserId, deltaForCur
       {/* Left: date */}
       <Box data-testid="expense-date" sx={{ minWidth: 96, textAlign: 'left' }}>
         <Typography variant="body2" color="text.secondary">{date}</Typography>
-        <Typography variant="body2" color="text.secondary">Paid by {youPaid ? 'you' : payer}</Typography>
       </Box>
 
       {/* Middle: description and payer */}
       <Box data-testid="expense-details" sx={{ flex: 1 }}>
         <Typography variant="subtitle1" fontWeight={600}>{expense.description}</Typography>
+        <Typography variant="body2" color="text.secondary">Paid by {youPaid ? 'you' : payer}</Typography>
       </Box>
 
       {/* Right: amount, delete, balance chip */}

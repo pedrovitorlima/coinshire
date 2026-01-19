@@ -64,10 +64,9 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
     e.preventDefault();
     const t = Number(total);
     if (!description.trim() || !isFinite(t) || t <= 0) return;
-    // Slider represents Other's share when you are paying; Your share when the other is paying.
+    // Slider shows: Your share when you are paying; Other's share when the other person is paying.
     // API expects payerSharePct = payer's share.
-    // In both cases, payerSharePct = 100 - sliderPct.
-    const effectivePayerSharePct = 100 - sliderPct;
+    const effectivePayerSharePct = payerIsYou ? sliderPct : 100 - sliderPct;
     onSubmit({ description: description.trim(), total: t, paidBy, payerSharePct: effectivePayerSharePct });
     onClose();
   };
@@ -116,7 +115,7 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
             <Slider
               value={sliderPct}
               onChange={(_, v) => setSliderPct(v as number)}
-              step={1}
+              step={5}
               min={0}
               max={100}
               valueLabelDisplay="auto"
