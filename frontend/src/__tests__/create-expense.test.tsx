@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import type { Expense } from '../types';
@@ -55,21 +55,43 @@ beforeEach(() => {
       const parsed = typeof body === 'string' ? JSON.parse(body) : body as any;
       const { description, total, paidBy, payerSharePct } = parsed;
       const otherUserId = state.users.find((u) => u.id !== paidBy)!.id;
-      const shares = {
-        [paidBy]: Math.round((Number(payerSharePct) / 100) * 1000) / 1000,
-        [otherUserId]: Math.round(((100 - Number(payerSharePct)) / 100) * 1000) / 1000,
-      } as Record<string, number>;
+      const payerShare = Math.round((Number(payerSharePct) / 100) * 1000) / 1000;
+      let participants: string[];
+      let shares: Record<string, number>;
+      if (payerShare === 1) {
+        // Payer covers 100% for the other user
+        participants = [otherUserId];
+        shares = { [otherUserId]: 1 };
+      } else if (payerShare === 0) {
+        // Payer covers 0% (other user covers 100% for payer)
+        participants = [paidBy];
+        shares = { [paidBy]: 1 };
+      } else {
+        participants = [paidBy, otherUserId];
+        shares = {
+          [paidBy]: payerShare,
+          [otherUserId]: Math.round((1 - payerShare) * 1000) / 1000,
+        };
+      }
       const newExp: Expense = {
         id: `e_${Date.now()}`,
         description,
         amount: Number(total),
         date: new Date().toISOString().slice(0, 10),
         paidBy,
-        participants: [paidBy, otherUserId],
+        participants,
         shares,
       };
       state.expenses.unshift(newExp);
       return json(newExp, 201);
+    }
+
+    if (method === 'DELETE' && path.startsWith('/api/expenses/')) {
+      const id = path.split('/').pop()!;
+      const before = state.expenses.length;
+      state.expenses = state.expenses.filter((e) => e.id !== id);
+      const removed = before !== state.expenses.length;
+      return new Response(null, { status: removed ? 204 : 404 });
     }
 
     return json({ error: 'not found' }, 404);
@@ -150,5 +172,74 @@ describe('GIVEN I am logged with user B WHEN I create an expense with 60% set as
     const otherBanner = await screen.findByText(/you owe/i);
     expect(otherBanner.textContent).toMatch(/40\.00/);
     expect(await screen.findByText('Test 60% payer share (u2)')).toBeInTheDocument();
+  });
+});
+
+describe('Deleting an expense refreshes the list', () => {
+  it('removes the expense from the list after delete confirmation', async () => {
+    const user = userEvent.setup();
+
+    // Seed an expense
+    state.expenses.push({
+      id: 'e_delete_me',
+      description: 'Seed expense',
+      amount: 10,
+      date: new Date().toISOString().slice(0, 10),
+      paidBy: 'u1',
+      participants: ['u1', 'u2'],
+      shares: { u1: 0.5, u2: 0.5 },
+    });
+
+    // Stub confirm dialog to accept deletion
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<App />);
+
+    // Ensure expense shows up
+    expect(await screen.findByText('Seed expense')).toBeInTheDocument();
+
+    // Click delete button
+    const delBtn = await screen.findByRole('button', { name: /delete seed expense/i });
+    await user.click(delBtn);
+
+    // Wait for it to disappear (list refreshed)
+    await waitFor(() => {
+      expect(screen.queryByText('Seed expense')).toBeNull();
+    });
+  });
+});
+
+describe('Payer 100% adds full amount as credit/debt', () => {
+  it('when user A pays 100%, they are owed 100%, and user B owes 100%', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/?user=1');
+
+    render(<App />);
+
+    // Open modal
+    await user.click(await screen.findByRole('button', { name: /add expense/i }));
+
+    // Fill fields
+    await user.type(await screen.findByLabelText(/description/i), 'All on me');
+    const total = await screen.findByLabelText(/total.*aud/i);
+    await user.clear(total);
+    await user.type(total, '50');
+
+    // Set slider to 100%
+    const slider = await screen.findByRole('slider');
+    fireEvent.keyDown(slider, { key: 'End', code: 'End' });
+
+    // Save
+    await user.click(await screen.findByRole('button', { name: /save/i }));
+
+    // Payer banner shows full amount owed to them
+    const banner = await screen.findByText(/you are owed/i);
+    expect(banner.textContent).toMatch(/50\.00/);
+
+    // Switch to other user (Alex): they owe full amount
+    const alexAvatars = await screen.findAllByAltText(/alex/i);
+    await user.click(alexAvatars[0]);
+    const otherBanner = await screen.findByText(/you owe/i);
+    expect(otherBanner.textContent).toMatch(/50\.00/);
   });
 });

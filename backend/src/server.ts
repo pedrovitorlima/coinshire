@@ -66,10 +66,28 @@ app.post('/api/expenses', async (req, res) => {
     const otherUserId = users.find((u) => u.id !== paidBy)?.id;
     if (!otherUserId) return res.status(400).json({ error: 'Invalid payer' });
 
-    const shares = {
-      [paidBy]: Math.round((payerSharePct / 100) * 1000) / 1000,
-      [otherUserId]: Math.round(((100 - payerSharePct) / 100) * 1000) / 1000,
-    };
+    // Build participants and shares based on payer's share
+    const round3 = (n: number) => Math.round(n * 1000) / 1000;
+    const payerShare = round3((payerSharePct ?? 0) / 100);
+
+    let participants: string[];
+    let shares: Record<string, number>;
+
+    if (payerShare >= 0.999) {
+      // Payer covers 100% for the other user -> only the other participates
+      participants = [otherUserId];
+      shares = { [otherUserId]: 1 };
+    } else if (payerShare <= 0.001) {
+      // Payer covers 0% -> only payer participates (other paid 100% for payer)
+      participants = [paidBy];
+      shares = { [paidBy]: 1 };
+    } else {
+      participants = [paidBy, otherUserId];
+      shares = {
+        [paidBy]: payerShare,
+        [otherUserId]: round3(1 - payerShare),
+      };
+    }
 
     const newExp: Expense = {
       id: `e_${Date.now()}`,
@@ -77,7 +95,7 @@ app.post('/api/expenses', async (req, res) => {
       amount: Number(total),
       date: new Date().toISOString().slice(0, 10),
       paidBy,
-      participants: [paidBy, otherUserId],
+      participants,
       shares,
     };
 
