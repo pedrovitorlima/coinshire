@@ -71,6 +71,8 @@ function App() {
       const got = batch.length;
       setOffset(got);
       setHasMore(got >= PAGE_SIZE);
+      // Ensure the viewport scrolls back to top after reload (create/delete)
+      try { window.scrollTo?.(0, 0); } catch {}
     } finally {
       setLoading(false);
     }
