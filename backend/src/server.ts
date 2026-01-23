@@ -69,24 +69,18 @@ app.post('/api/expenses', async (req, res) => {
     // Build participants and shares based on payer's share
     const round3 = (n: number) => Math.round(n * 1000) / 1000;
     const payerShare = round3((payerSharePct ?? 0) / 100);
+    const otherShare = round3(1 - payerShare);
 
-    let participants: string[];
-    let shares: Record<string, number>;
+    const shares: Record<string, number> = {};
+    if (payerShare > 0) shares[paidBy] = payerShare;
+    if (otherShare > 0) shares[otherUserId] = otherShare;
 
-    if (payerShare >= 0.999) {
-      // Payer covers 100% for the other user -> only the other participates
-      participants = [otherUserId];
-      shares = { [otherUserId]: 1 };
-    } else if (payerShare <= 0.001) {
-      // Payer covers 0% -> only payer participates (other paid 100% for payer)
-      participants = [paidBy];
-      shares = { [paidBy]: 1 };
-    } else {
-      participants = [paidBy, otherUserId];
-      shares = {
-        [paidBy]: payerShare,
-        [otherUserId]: round3(1 - payerShare),
-      };
+    const participants = Object.keys(shares);
+    if (participants.length === 0) {
+      // Fallback: split equally if rounding produced 0 on both (shouldn't happen)
+      shares[paidBy] = 0.5;
+      shares[otherUserId] = 0.5;
+      participants.push(paidBy, otherUserId);
     }
 
     const newExp: Expense = {

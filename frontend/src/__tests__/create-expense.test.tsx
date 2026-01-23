@@ -55,24 +55,15 @@ beforeEach(() => {
       const parsed = typeof body === 'string' ? JSON.parse(body) : body as any;
       const { description, total, paidBy, payerSharePct } = parsed;
       const otherUserId = state.users.find((u) => u.id !== paidBy)!.id;
-      const payerShare = Math.round((Number(payerSharePct) / 100) * 1000) / 1000;
-      let participants: string[];
-      let shares: Record<string, number>;
-      if (payerShare === 1) {
-        // Payer covers 100% for the other user
-        participants = [otherUserId];
-        shares = { [otherUserId]: 1 };
-      } else if (payerShare === 0) {
-        // Payer covers 0% (other user covers 100% for payer)
-        participants = [paidBy];
-        shares = { [paidBy]: 1 };
-      } else {
-        participants = [paidBy, otherUserId];
-        shares = {
-          [paidBy]: payerShare,
-          [otherUserId]: Math.round((1 - payerShare) * 1000) / 1000,
-        };
-      }
+      const round3 = (n: number) => Math.round(n * 1000) / 1000;
+      const payerShare = round3(Number(payerSharePct) / 100);
+      const otherShare = round3(1 - payerShare);
+
+      const shares: Record<string, number> = {};
+      if (payerShare > 0) shares[paidBy] = payerShare;
+      if (otherShare > 0) shares[otherUserId] = otherShare;
+      const participants = Object.keys(shares);
+
       const newExp: Expense = {
         id: `e_${Date.now()}`,
         description,
@@ -209,8 +200,8 @@ describe('Deleting an expense refreshes the list', () => {
   });
 });
 
-describe('Payer 100% adds full amount as credit/debt', () => {
-  it('when user A pays 100%, they are owed 100%, and user B owes 100%', async () => {
+describe('Payer 100% (your own share) has no balance impact', () => {
+  it('when user A pays 100% of their own share, both remain settled', async () => {
     const user = userEvent.setup();
     window.history.replaceState({}, '', '/?user=1');
 
@@ -232,14 +223,47 @@ describe('Payer 100% adds full amount as credit/debt', () => {
     // Save
     await user.click(await screen.findByRole('button', { name: /save/i }));
 
-    // Payer banner shows full amount owed to them
-    const banner = await screen.findByText(/you are owed/i);
-    expect(banner.textContent).toMatch(/50\.00/);
+    // No balance impact for payer
+    expect(await screen.findByText(/all settled up!/i)).toBeInTheDocument();
 
-    // Switch to other user (Alex): they owe full amount
+    // Switch to other user (Alex): also settled
+    const alexAvatars = await screen.findAllByAltText(/alex/i);
+    await user.click(alexAvatars[0]);
+    expect(await screen.findByText(/all settled up!/i)).toBeInTheDocument();
+  });
+});
+
+describe('Payer 0% means the other owes 100%', () => {
+  it('when user A sets share to 0%, the other user owes full amount', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/?user=1');
+
+    render(<App />);
+
+    // Open modal
+    await user.click(await screen.findByRole('button', { name: /add expense/i }));
+
+    // Fill fields
+    await user.type(await screen.findByLabelText(/description/i), 'Zero share');
+    const total = await screen.findByLabelText(/total.*aud/i);
+    await user.clear(total);
+    await user.type(total, '80');
+
+    // Set slider to 0%
+    const slider = await screen.findByRole('slider');
+    fireEvent.keyDown(slider, { key: 'Home', code: 'Home' });
+
+    // Save
+    await user.click(await screen.findByRole('button', { name: /save/i }));
+
+    // Payer should be owed the full amount
+    const banner = await screen.findByText(/you are owed/i);
+    expect(banner.textContent).toMatch(/80\.00/);
+
+    // Switch to other user: they owe the full amount
     const alexAvatars = await screen.findAllByAltText(/alex/i);
     await user.click(alexAvatars[0]);
     const otherBanner = await screen.findByText(/you owe/i);
-    expect(otherBanner.textContent).toMatch(/50\.00/);
+    expect(otherBanner.textContent).toMatch(/80\.00/);
   });
 });
