@@ -112,6 +112,33 @@ describe('Reload list and scroll to top on create', () => {
     expect(args[0]).toBe(0);
     expect(args[1]).toBe(0);
   });
+
+  it('after creating 0% (other owes 100%), it appears in the list and window scrolls to top', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/?user=1');
+
+    render(<App />);
+
+    await user.click(await screen.findByRole('button', { name: /add expense/i }));
+    await user.type(await screen.findByLabelText(/description/i), 'Other owes all');
+    const total = await screen.findByLabelText(/total.*aud/i);
+    await user.clear(total);
+    await user.type(total, '99');
+
+    // Set slider to 0%
+    await user.keyboard('{Home}');
+
+    await user.click(await screen.findByRole('button', { name: /save/i }));
+
+    // Item should be in the list (reloaded from start)
+    expect(await screen.findByText('Other owes all')).toBeInTheDocument();
+
+    // Scroll called to top
+    expect(window.scrollTo).toHaveBeenCalled();
+    const args = (window.scrollTo as any).mock.calls.at(-1);
+    expect(args[0]).toBe(0);
+    expect(args[1]).toBe(0);
+  });
 });
 
 describe('Reload list and scroll to top on delete', () => {

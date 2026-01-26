@@ -37,14 +37,15 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
   const [description, setDescription] = useState<string>('');
   const [total, setTotal] = useState<string>('');
   const [paidBy, setPaidBy] = useState<string>(defaultPayerId);
-  const [sliderPct, setSliderPct] = useState<number>(60);
+  const defaultShareFor = (userId: string) => (userId === 'u1' ? 60 : 40);
+  const [sliderPct, setSliderPct] = useState<number>(defaultShareFor(defaultPayerId));
 
   useEffect(() => {
     if (isOpen) {
       setDescription('');
       setTotal('');
       setPaidBy(defaultPayerId);
-      setSliderPct(60);
+      setSliderPct(defaultShareFor(defaultPayerId));
     }
   }, [isOpen, defaultPayerId]);
 
@@ -99,7 +100,15 @@ export default function AddExpenseModal({ isOpen, onClose, users, defaultPayerId
               labelId="paid-by-label"
               label="Who is paying"
               value={paidBy}
-              onChange={(e) => setPaidBy(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value as string;
+                setPaidBy(next);
+                // Update slider default based on who is paying and which share is shown
+                const payerIsYouNext = next === defaultPayerId;
+                // Slider shows: Your share when you are paying; Other's share (payer) when the other is paying
+                const targetUserForSlider = payerIsYouNext ? defaultPayerId : next; // next is the other (payer)
+                setSliderPct(defaultShareFor(targetUserForSlider));
+              }}
             >
               <MenuItem value={defaultPayerId}>{defaultPayerId === 'u1' ? USER1_NAME : USER2_NAME} (you)</MenuItem>
               {users.find((u) => u.id !== defaultPayerId) && (

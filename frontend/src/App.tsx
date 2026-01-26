@@ -125,10 +125,18 @@ function App() {
   }, [bottomRef.current, loading, hasMore]);
 
   const addExpense = async ({ description, total, paidBy, payerSharePct }: AddExpensePayload) => {
-    await api.createExpense({ description, total, paidBy, payerSharePct });
-    // Reload from start to reflect new item and recompute balance
-    await loadBalance(selectedUserId);
+    try {
+      await api.createExpense({ description, total, paidBy, payerSharePct });
+    } catch (e) {
+      console.error('Failed to create expense', e);
+    }
+    // Always reload list; balance refresh should not block list reload
     await reloadFromStart();
+    try {
+      await loadBalance(selectedUserId);
+    } catch (e) {
+      console.error('Failed to load balance', e);
+    }
   };
 
   const bg = mode === 'user_1' ? 'rgba(137, 207, 240, 0.18)' : 'rgba(255, 192, 203, 0.18)';
@@ -140,9 +148,17 @@ function App() {
   }, [items, selectedUserId]);
 
   const handleDelete = async (id: string) => {
-    await api.deleteExpense(id);
-    await loadBalance(selectedUserId);
+    try {
+      await api.deleteExpense(id);
+    } catch (e) {
+      console.error('Failed to delete expense', e);
+    }
     await reloadFromStart();
+    try {
+      await loadBalance(selectedUserId);
+    } catch (e) {
+      console.error('Failed to load balance', e);
+    }
   };
 
   return (
