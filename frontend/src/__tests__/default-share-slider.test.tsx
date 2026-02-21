@@ -110,7 +110,7 @@ describe('Default slider weight based on user defaults', () => {
 
     const who = await screen.findByLabelText(/who is paying/i);
     await user.click(who);
-    const option = await screen.findByRole('option', { name: /you/i });
+    const option = await screen.findByRole('option', { name: /^You$/i });
     await user.click(option);
 
     const sliderAfter = await screen.findByRole('slider');

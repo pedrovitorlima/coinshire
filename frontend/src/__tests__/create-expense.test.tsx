@@ -146,7 +146,12 @@ describe('GIVEN I am logged with user B WHEN I create an expense with 60% set as
     await user.clear(total);
     await user.type(total, '100');
 
-    // paidBy defaults to current user (you), slider defaults to 60%
+    // paidBy defaults to current user (you), slider defaults to 40% for user B; adjust to 60%
+    const slider = await screen.findByRole('slider');
+    fireEvent.keyDown(slider, { key: 'ArrowRight', code: 'ArrowRight' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight', code: 'ArrowRight' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight', code: 'ArrowRight' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight', code: 'ArrowRight' });
 
     // Save
     await user.click(await screen.findByRole('button', { name: /save/i }));
@@ -200,8 +205,8 @@ describe('Deleting an expense refreshes the list', () => {
   });
 });
 
-describe('Payer 100% (your own share) has no balance impact', () => {
-  it('when user A pays 100% of their own share, both remain settled', async () => {
+describe('Payer 100% adds full debit to the payer', () => {
+  it('when user A pays 100% of their own share, they owe the full amount and the other remains settled', async () => {
     const user = userEvent.setup();
     window.history.replaceState({}, '', '/?user=1');
 
@@ -223,10 +228,14 @@ describe('Payer 100% (your own share) has no balance impact', () => {
     // Save
     await user.click(await screen.findByRole('button', { name: /save/i }));
 
-    // No balance impact for payer
-    expect(await screen.findByText(/all settled up!/i)).toBeInTheDocument();
+    // Payer now owes the full amount
+    const youOwe = await screen.findByText(/you owe/i);
+    expect(youOwe.textContent).toMatch(/50\.00/);
 
-    // Switch to other user (Alex): also settled
+    // The item appears in the list (refresh after create)
+    expect(await screen.findByText('All on me')).toBeInTheDocument();
+
+    // Switch to other user (Alex): remains settled
     const alexAvatars = await screen.findAllByAltText(/alex/i);
     await user.click(alexAvatars[0]);
     expect(await screen.findByText(/all settled up!/i)).toBeInTheDocument();
