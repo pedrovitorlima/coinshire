@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { getUsers, getExpenses, insertExpense, currentUserId, deleteExpense } from './db.js';
+import { getUsers, getExpenses, insertExpense, currentUserId, deleteExpense, deleteAllExpenses } from './db.js';
 import { computeBalance } from './balance.js';
 import type { Expense } from './types.js';
 
@@ -112,6 +112,18 @@ app.delete('/api/expenses/:id', async (req, res) => {
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete expense' });
+  }
+});
+
+// Settle up: delete all expenses and reset balances to zero (derived from empty list)
+app.post('/api/settle-up', async (_req, res) => {
+  try {
+    await deleteAllExpenses();
+    // No content needed; balances are computed from expenses which are now empty
+    return res.status(204).send();
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to settle up' });
   }
 });
 

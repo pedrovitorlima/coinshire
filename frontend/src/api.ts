@@ -23,6 +23,15 @@ async function post<T>(path: string, body: any): Promise<T> {
   return res.json();
 }
 
+async function postVoid(path: string, body: any): Promise<void> {
+  const res = await fetch(`${base}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
+}
+
 async function del(path: string): Promise<void> {
   const res = await fetch(`${base}${path}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
@@ -47,5 +56,8 @@ export const api = {
   },
   async deleteExpense(id: string) {
     return del(`/expenses/${encodeURIComponent(id)}`);
+  },
+  async settleUp() {
+    return postVoid(`/settle-up`, {});
   },
 };

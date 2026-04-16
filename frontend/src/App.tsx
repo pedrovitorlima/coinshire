@@ -161,9 +161,31 @@ function App() {
     }
   };
 
+  const handleSettleUp = async () => {
+    const ok = window.confirm('Settle up will delete all expenses and reset balances to 0 for both users. Continue?');
+    if (!ok) return;
+    try {
+      await api.settleUp();
+    } catch (e) {
+      console.error('Failed to settle up', e);
+    }
+    await reloadFromStart();
+    try {
+      await loadBalance(selectedUserId);
+    } catch (e) {
+      console.error('Failed to load balance', e);
+    }
+  };
+
   return (
     <div className="app" style={{ backgroundColor: bg, minHeight: '100vh' }}>
-      <Banner netBalance={net} onAddExpense={() => setModalOpen(true)} mode={mode} onModeChange={setMode} />
+      <Banner
+        netBalance={net}
+        onAddExpense={() => setModalOpen(true)}
+        onSettleUp={handleSettleUp}
+        mode={mode}
+        onModeChange={setMode}
+      />
       <main className="content">
         <ExpensesList
           expenses={items}

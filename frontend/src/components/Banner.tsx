@@ -6,11 +6,12 @@ import type { Mode } from '../config';
 type BannerProps = {
   netBalance: number;
   onAddExpense?: () => void;
+  onSettleUp?: () => void;
   mode: Mode;
   onModeChange: (mode: Mode) => void;
 };
 
-export default function Banner({ netBalance, onAddExpense, mode, onModeChange }: BannerProps) {
+export default function Banner({ netBalance, onAddExpense, onSettleUp, mode, onModeChange }: BannerProps) {
   const positive = netBalance > 0;
   const negative = netBalance < 0;
   const label = positive
@@ -30,7 +31,10 @@ export default function Banner({ netBalance, onAddExpense, mode, onModeChange }:
         {/* Center content */}
         <Stack spacing={1.5} alignItems="center" sx={{ textAlign: 'center' }}>
           <UsageMode selected={mode} size="large" />
-          <Button variant="contained" onClick={onAddExpense}>+ Add expense</Button>
+          <Stack direction="row" spacing={1}>
+            <Button variant="contained" onClick={onAddExpense}>+ Add expense</Button>
+            <Button variant="outlined" onClick={onSettleUp}>Settle up</Button>
+          </Stack>
           <Chip
             color={positive ? 'success' : negative ? 'error' : 'default'}
             label={label}
