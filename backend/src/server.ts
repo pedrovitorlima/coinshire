@@ -48,6 +48,19 @@ app.get('/api/balance', async (req, res) => {
   }
 });
 
+// Recompute both users' net balances from all expenses (zero-sum: u2 = -u1)
+app.post('/api/recalculate', async (_req, res) => {
+  try {
+    const items = await getExpenses(undefined, undefined);
+    const u1Net = computeBalance('u1', items).net;
+    const u2Net = -u1Net;
+    res.json({ balances: { u1: u1Net, u2: u2Net } });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to recalculate balances' });
+  }
+});
+
 // Create expense
 app.post('/api/expenses', async (req, res) => {
   try {

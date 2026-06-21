@@ -13,11 +13,7 @@ export function computeBalance(currentUserId: string, expenses: Expense[]) {
 
     let delta = 0;
 
-    // New rule: if a user's share is 100%, the full amount is their debit (owe), regardless of who paid
-    const hasFullShare = Math.abs(userShareFraction - 1) < 1e-9;
-    if (hasFullShare) {
-      delta = -exp.amount;
-    } else if (isPayer && isParticipant) {
+    if (isPayer && isParticipant) {
       delta = exp.amount - userShareAmount;
     } else if (isPayer && !isParticipant) {
       delta = exp.amount;
