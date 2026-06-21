@@ -10,6 +10,7 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  Toolbar,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CalculateOutlinedIcon from '@mui/icons-material/CalculateOutlined';
@@ -54,46 +55,42 @@ export default function Banner({
 
   return (
     <AppBar position="sticky" color="inherit" elevation={1} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
-      <Box sx={{ position: 'relative', px: 2, py: { xs: 3, sm: 4 }, display: 'flex', justifyContent: 'center' }}>
-        {/* Top-left: small selector */}
-        <Box sx={{ position: 'absolute', top: 8, left: 12 }}>
-          <UsageMode selected={mode} onSelect={onModeChange} size="small" />
-        </Box>
-
-        {/* Top-right: menu */}
-        <Box sx={{ position: 'absolute', top: 8, right: 12 }}>
-          <IconButton
-            aria-label="Open menu"
-            aria-controls={menuOpen ? 'app-menu' : undefined}
-            aria-haspopup="true"
-            aria-expanded={menuOpen ? 'true' : undefined}
-            onClick={(e) => setMenuAnchor(e.currentTarget)}
-            size="large"
-          >
-            <MenuIcon />
-          </IconButton>
-        </Box>
-
-        <Menu
-          id="app-menu"
-          anchorEl={menuAnchor}
-          open={menuOpen}
-          onClose={closeMenu}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      <Toolbar disableGutters sx={{ px: 1.5, minHeight: 48, justifyContent: 'space-between' }}>
+        <UsageMode selected={mode} onSelect={onModeChange} size="small" />
+        <IconButton
+          aria-label="Open menu"
+          aria-controls={menuOpen ? 'app-menu' : undefined}
+          aria-haspopup="true"
+          aria-expanded={menuOpen ? 'true' : undefined}
+          onClick={(e) => setMenuAnchor(e.currentTarget)}
+          edge="end"
+          size="large"
+          sx={{ color: 'text.primary' }}
         >
-          <MenuItem onClick={handleRecalculate}>
-            <ListItemIcon>
-              <CalculateOutlinedIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Re-calculate</ListItemText>
-          </MenuItem>
-        </Menu>
+          <MenuIcon fontSize="medium" />
+        </IconButton>
+      </Toolbar>
 
-        {/* Center content */}
+      <Menu
+        id="app-menu"
+        anchorEl={menuAnchor}
+        open={menuOpen}
+        onClose={closeMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MenuItem onClick={handleRecalculate}>
+          <ListItemIcon>
+            <CalculateOutlinedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Re-calculate</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      <Box sx={{ px: 2, pb: 3, pt: 0.5, display: 'flex', justifyContent: 'center' }}>
         <Stack spacing={1.5} alignItems="center" sx={{ textAlign: 'center' }}>
           <UsageMode selected={mode} size="large" />
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center">
             <Button variant="contained" onClick={onAddExpense}>+ Add expense</Button>
             <Button variant="outlined" onClick={onSettleUp}>Settle up</Button>
           </Stack>
