@@ -60,4 +60,7 @@ export const api = {
   async settleUp() {
     return postVoid(`/settle-up`, {});
   },
+  async recalculate() {
+    return post<{ balances: { u1: number; u2: number } }>(`/recalculate`, {});
+  },
 };

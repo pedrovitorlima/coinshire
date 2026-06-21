@@ -205,8 +205,8 @@ describe('Deleting an expense refreshes the list', () => {
   });
 });
 
-describe('Payer 100% adds full debit to the payer', () => {
-  it('when user A pays 100% of their own share, they owe the full amount and the other remains settled', async () => {
+describe('Payer 100% share is fully settled for both users', () => {
+  it('when user A pays 100% of their own share, both users remain settled', async () => {
     const user = userEvent.setup();
     window.history.replaceState({}, '', '/?user=1');
 
@@ -228,14 +228,13 @@ describe('Payer 100% adds full debit to the payer', () => {
     // Save
     await user.click(await screen.findByRole('button', { name: /save/i }));
 
-    // Payer now owes the full amount
-    const youOwe = await screen.findByText(/you owe/i);
-    expect(youOwe.textContent).toMatch(/50\.00/);
+    // Payer covered their full share — no balance impact
+    expect(await screen.findByText(/all settled up!/i)).toBeInTheDocument();
 
     // The item appears in the list (refresh after create)
     expect(await screen.findByText('All on me')).toBeInTheDocument();
 
-    // Switch to other user (Alex): remains settled
+    // Switch to other user (Alex): also settled
     const alexAvatars = await screen.findAllByAltText(/alex/i);
     await user.click(alexAvatars[0]);
     expect(await screen.findByText(/all settled up!/i)).toBeInTheDocument();

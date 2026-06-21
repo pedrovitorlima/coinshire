@@ -177,12 +177,23 @@ function App() {
     }
   };
 
+  const handleRecalculate = async () => {
+    try {
+      const { balances } = await api.recalculate();
+      setNet(balances[selectedUserId as 'u1' | 'u2']);
+      await reloadFromStart();
+    } catch (e) {
+      console.error('Failed to recalculate balances', e);
+    }
+  };
+
   return (
     <div className="app" style={{ backgroundColor: bg, minHeight: '100vh' }}>
       <Banner
         netBalance={net}
         onAddExpense={() => setModalOpen(true)}
         onSettleUp={handleSettleUp}
+        onRecalculate={handleRecalculate}
         mode={mode}
         onModeChange={setMode}
       />
