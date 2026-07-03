@@ -30,34 +30,56 @@ const expenses: Expense[] = [
   },
 ];
 
-test('buildUserBalancePayload includes signed balance and only the latest expense', () => {
+test('buildUserBalancePayload includes signed balance and the last three expenses', () => {
+  const manyExpenses: Expense[] = Array.from({ length: 5 }, (_, index) => ({
+    id: `e${index}`,
+    description: `Expense ${index}`,
+    amount: 10,
+    date: `2025-06-${String(index + 1).padStart(2, '0')}`,
+    paidBy: 'u2',
+    participants: ['u1', 'u2'],
+    shares: { u1: 0.5, u2: 0.5 },
+  }));
+
+  const alice = buildUserBalancePayload('u1', users, manyExpenses);
+
+  assert.equal(alice.expenses.length, 3);
+  assert.equal(alice.expenses[0]?.description, 'Expense 4');
+  assert.equal(alice.expenses[1]?.description, 'Expense 3');
+  assert.equal(alice.expenses[2]?.description, 'Expense 2');
+  assert.equal(alice.expenses[0]?.share, -5);
+});
+
+test('buildUserBalancePayload includes all expenses when fewer than three exist', () => {
   const alice = buildUserBalancePayload('u1', users, expenses);
   const bob = buildUserBalancePayload('u2', users, expenses);
 
   assert.equal(alice.name, 'Alice');
   assert.equal(alice.balance, 30);
   assert.equal(alice.settled, false);
-  assert.deepEqual(alice.expense, {
+  assert.equal(alice.expenses.length, 2);
+  assert.deepEqual(alice.expenses[0], {
     description: 'Taxi',
     date: '2025-06-02',
     share: -10,
   });
-
-  assert.equal(bob.name, 'Bob');
-  assert.equal(bob.balance, -30);
-  assert.deepEqual(bob.expense, {
-    description: 'Taxi',
-    date: '2025-06-02',
-    share: 10,
+  assert.deepEqual(alice.expenses[1], {
+    description: 'Dinner',
+    date: '2025-06-01',
+    share: 40,
   });
+
+  assert.equal(bob.balance, -30);
+  assert.equal(bob.expenses[0]?.share, 10);
+  assert.equal(bob.expenses[1]?.share, -40);
 });
 
-test('buildUserBalancePayload returns null expense when there are no expenses', () => {
+test('buildUserBalancePayload returns an empty expenses list when there are no expenses', () => {
   const alice = buildUserBalancePayload('u1', users, []);
 
   assert.equal(alice.balance, 0);
   assert.equal(alice.settled, true);
-  assert.equal(alice.expense, null);
+  assert.deepEqual(alice.expenses, []);
 });
 
 test('buildUserBalancePayload marks settled balances', () => {

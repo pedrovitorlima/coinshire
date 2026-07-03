@@ -13,9 +13,11 @@ export type MqttUserBalancePayload = {
   name: string;
   balance: number;
   settled: boolean;
-  expense: MqttUserExpense | null;
+  expenses: MqttUserExpense[];
   updated_at: string;
 };
+
+const RECENT_EXPENSE_LIMIT = 3;
 
 function userName(users: User[], userId: string): string {
   return users.find((u) => u.id === userId)?.name ?? userId;
@@ -25,18 +27,17 @@ function sortExpensesNewestFirst(expenses: Expense[]): Expense[] {
   return [...expenses].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 }
 
-function latestExpenseForUser(
+function recentExpensesForUser(
   byExpense: Record<string, number>,
   expenses: Expense[],
-): MqttUserExpense | null {
-  const latest = sortExpensesNewestFirst(expenses)[0];
-  if (!latest) return null;
-
-  return {
-    description: latest.description,
-    date: latest.date,
-    share: byExpense[latest.id] ?? 0,
-  };
+): MqttUserExpense[] {
+  return sortExpensesNewestFirst(expenses)
+    .slice(0, RECENT_EXPENSE_LIMIT)
+    .map((expense) => ({
+      description: expense.description,
+      date: expense.date,
+      share: byExpense[expense.id] ?? 0,
+    }));
 }
 
 export function buildUserBalancePayload(userId: string, users: User[], expenses: Expense[]): MqttUserBalancePayload {
@@ -46,7 +47,7 @@ export function buildUserBalancePayload(userId: string, users: User[], expenses:
     name: userName(users, userId),
     balance: net,
     settled: net === 0,
-    expense: latestExpenseForUser(byExpense, expenses),
+    expenses: recentExpensesForUser(byExpense, expenses),
     updated_at: new Date().toISOString(),
   };
 }

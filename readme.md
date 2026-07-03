@@ -87,18 +87,25 @@ Published payload per topic (JSON, retained):
   "name": "You",
   "balance": 40,
   "settled": false,
-  "expense": {
-    "description": "Taxi",
-    "date": "2025-06-02",
-    "share": -10
-  },
+  "expenses": [
+    {
+      "description": "Taxi",
+      "date": "2025-06-02",
+      "share": -10
+    },
+    {
+      "description": "Dinner",
+      "date": "2025-06-01",
+      "share": 40
+    }
+  ],
   "updated_at": "2026-07-03T07:55:00.000Z"
 }
 ```
 
 - `balance` is that person's net balance: positive = they are owed, negative = they owe (matches the banner).
-- `expense` is the most recent expense only; `share` is the same signed value shown on that expense in the app (`lent` / `owe` chip).
-- When there are no expenses, `expense` is `null`.
+- `expenses` lists the last three expenses (newest first, including any newly created one); `share` is the same signed value shown on that expense in the app (`lent` / `owe` chip).
+- When there are no expenses, `expenses` is an empty array.
 
 Subscribe in Home Assistant to `coinshire/balance/u1` and `coinshire/balance/u2` (or your chosen prefix) and parse the JSON payload for sensors or templates.
 
