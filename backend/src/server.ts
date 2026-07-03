@@ -3,6 +3,8 @@ import cors from 'cors';
 import { getUsers, getExpenses, insertExpense, currentUserId, deleteExpense, deleteAllExpenses } from './db.js';
 import { computeBalance } from './balance.js';
 import { notifyBalanceUpdate } from './balance-notify.js';
+import { describeMqttConfig } from './mqtt-config.js';
+import { getMqttRuntimeStatus, probeMqttConnection } from './mqtt-client.js';
 import type { Expense } from './types.js';
 
 const app = express();
@@ -12,14 +14,46 @@ app.use(express.json());
 async function publishBalanceAfterUpdate(): Promise<void> {
   try {
     const [users, expenses] = await Promise.all([getUsers(), getExpenses(undefined, undefined)]);
+    console.log('[mqtt] Publishing balance update for', users.map((u) => u.id).join(', '));
     await notifyBalanceUpdate(users, expenses);
+    console.log('[mqtt] Balance update published');
   } catch (err) {
-    console.error('Failed to publish balance to MQTT', err);
+    console.error('[mqtt] Failed to publish balance update', err);
   }
 }
 
 // Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// MQTT diagnostics
+app.get('/api/mqtt/status', async (_req, res) => {
+  res.json({
+    config: describeMqttConfig(),
+    runtime: getMqttRuntimeStatus(),
+  });
+});
+
+app.post('/api/mqtt/test', async (_req, res) => {
+  try {
+    const result = await probeMqttConnection();
+    if (!result.ok) {
+      return res.status(503).json(result);
+    }
+    await publishBalanceAfterUpdate();
+    return res.json({
+      ...result,
+      runtime: getMqttRuntimeStatus(),
+    });
+  } catch (err: any) {
+    console.error('[mqtt] Test publish failed', err);
+    return res.status(503).json({
+      ok: false,
+      config: describeMqttConfig(),
+      runtime: getMqttRuntimeStatus(),
+      error: err?.message ?? 'MQTT test failed',
+    });
+  }
+});
 
 // Users
 app.get('/api/users', async (_req, res) => {

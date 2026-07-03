@@ -53,10 +53,9 @@ export function buildUserBalancePayload(userId: string, users: User[], expenses:
 }
 
 export async function notifyBalanceUpdate(users: User[], expenses: Expense[]): Promise<void> {
-  await Promise.all(
-    users.map(async (user) => {
-      const payload = buildUserBalancePayload(user.id, users, expenses);
-      await publishMqttMessage(topicForUser(user.id), payload);
-    }),
-  );
+  for (const user of users) {
+    const payload = buildUserBalancePayload(user.id, users, expenses);
+    const topic = topicForUser(user.id);
+    await publishMqttMessage(topic, payload);
+  }
 }
