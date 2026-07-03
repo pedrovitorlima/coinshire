@@ -167,6 +167,7 @@ app.delete('/api/expenses/:id', async (req, res) => {
     if (!id) return res.status(400).json({ error: 'Missing id' });
     const deleted = await deleteExpense(id);
     if (deleted === 0) return res.status(404).json({ error: 'Not found' });
+    void publishBalanceAfterUpdate();
     return res.status(204).send();
   } catch (err: any) {
     console.error(err);
