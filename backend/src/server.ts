@@ -2,11 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import { getUsers, getExpenses, insertExpense, currentUserId, deleteExpense, deleteAllExpenses } from './db.js';
 import { computeBalance } from './balance.js';
+import { notifyBalanceUpdate } from './balance-notify.js';
 import type { Expense } from './types.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+async function publishBalanceAfterUpdate(): Promise<void> {
+  try {
+    const [users, expenses] = await Promise.all([getUsers(), getExpenses(undefined, undefined)]);
+    await notifyBalanceUpdate(users, expenses);
+  } catch (err) {
+    console.error('Failed to publish balance to MQTT', err);
+  }
+}
 
 // Health
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
@@ -54,6 +64,7 @@ app.post('/api/recalculate', async (_req, res) => {
     const items = await getExpenses(undefined, undefined);
     const u1Net = computeBalance('u1', items).net;
     const u2Net = -u1Net;
+    void publishBalanceAfterUpdate();
     res.json({ balances: { u1: u1Net, u2: u2Net } });
   } catch (err: any) {
     console.error(err);
@@ -107,6 +118,7 @@ app.post('/api/expenses', async (req, res) => {
     };
 
     await insertExpense(newExp);
+    void publishBalanceAfterUpdate();
     return res.status(201).json(newExp);
   } catch (err: any) {
     console.error(err);

@@ -58,3 +58,47 @@ Environment configuration summary:
 - Local Vite dev: use `frontend/.env.development` or set env vars before `npm run dev`.
 - Backend uses `DATABASE_URL`. Default ports are wired for the compose setup.
 
+## MQTT balance updates (Home Assistant)
+
+When an expense is created or **Re-calculate** is used, the backend can publish the current balance to an MQTT broker.
+
+1) Copy `.env.copy` to `.env` (if you have not already) and set:
+
+```
+MQTT_ENABLED=true
+MQTT_HOST=192.168.1.100
+MQTT_PORT=1883
+MQTT_TOPIC=coinshire/balance
+MQTT_USERNAME=homeassistant
+MQTT_PASSWORD=your-mqtt-password
+```
+
+2) Restart the backend (`docker compose up -d --build backend` or restart `npm run dev`).
+
+Published payload (JSON, retained):
+
+```json
+{
+  "name": "Alex",
+  "amount_owed": 40,
+  "settled": false,
+  "recent_expenses": [
+    {
+      "id": "e1",
+      "description": "Dinner",
+      "amount": 100,
+      "date": "2025-06-01",
+      "paid_by": "You",
+      "balance_impact": -40
+    }
+  ],
+  "updated_at": "2026-07-03T07:55:00.000Z"
+}
+```
+
+- `name` is the person who **owes** money (if Alice is owed $40, `name` is Bob and `amount_owed` is 40).
+- `recent_expenses` lists the last five expenses that involve that person.
+- When everything is settled, `settled` is `true` and `amount_owed` is `0`.
+
+Subscribe in Home Assistant to `coinshire/balance` (or your chosen topic) and parse the JSON payload for sensors or templates.
+
