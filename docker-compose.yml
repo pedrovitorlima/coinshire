@@ -25,7 +25,7 @@ services:
       MQTT_ENABLED: ${MQTT_ENABLED:-false}
       MQTT_HOST: ${MQTT_HOST:-}
       MQTT_PORT: ${MQTT_PORT:-1883}
-      MQTT_TOPIC: ${MQTT_TOPIC:-coinshire/balance}
+      MQTT_TOPIC_PREFIX: ${MQTT_TOPIC_PREFIX:-coinshire/balance}
       MQTT_USERNAME: ${MQTT_USERNAME:-}
       MQTT_PASSWORD: ${MQTT_PASSWORD:-}
     ports:

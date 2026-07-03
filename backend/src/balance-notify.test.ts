@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildBalanceMqttPayload } from './balance-notify.js';
+import { buildUserBalancePayload } from './balance-notify.js';
+import { topicForUser } from './mqtt-config.js';
 import type { Expense, User } from './types.js';
 
 const users: User[] = [
@@ -8,31 +9,59 @@ const users: User[] = [
   { id: 'u2', name: 'Bob' },
 ];
 
-test('buildBalanceMqttPayload sends the debtor name and amount owed', () => {
-  const expenses: Expense[] = [
-    {
-      id: 'e1',
-      description: 'Dinner',
-      amount: 100,
-      date: '2025-06-01',
-      paidBy: 'u1',
-      participants: ['u1', 'u2'],
-      shares: { u1: 0.6, u2: 0.4 },
-    },
-  ];
+const expenses: Expense[] = [
+  {
+    id: 'e1',
+    description: 'Dinner',
+    amount: 100,
+    date: '2025-06-01',
+    paidBy: 'u1',
+    participants: ['u1', 'u2'],
+    shares: { u1: 0.6, u2: 0.4 },
+  },
+  {
+    id: 'e2',
+    description: 'Taxi',
+    amount: 20,
+    date: '2025-06-02',
+    paidBy: 'u2',
+    participants: ['u1', 'u2'],
+    shares: { u1: 0.5, u2: 0.5 },
+  },
+];
 
-  const payload = buildBalanceMqttPayload(users, expenses);
+test('buildUserBalancePayload includes signed balance and only the latest expense', () => {
+  const alice = buildUserBalancePayload('u1', users, expenses);
+  const bob = buildUserBalancePayload('u2', users, expenses);
 
-  assert.equal(payload.name, 'Bob');
-  assert.equal(payload.amount_owed, 40);
-  assert.equal(payload.settled, false);
-  assert.equal(payload.recent_expenses.length, 1);
-  assert.equal(payload.recent_expenses[0]?.balance_impact, -40);
-  assert.equal(payload.recent_expenses[0]?.paid_by, 'Alice');
+  assert.equal(alice.name, 'Alice');
+  assert.equal(alice.balance, 30);
+  assert.equal(alice.settled, false);
+  assert.deepEqual(alice.expense, {
+    description: 'Taxi',
+    date: '2025-06-02',
+    share: -10,
+  });
+
+  assert.equal(bob.name, 'Bob');
+  assert.equal(bob.balance, -30);
+  assert.deepEqual(bob.expense, {
+    description: 'Taxi',
+    date: '2025-06-02',
+    share: 10,
+  });
 });
 
-test('buildBalanceMqttPayload marks settled balances with zero amount owed', () => {
-  const expenses: Expense[] = [
+test('buildUserBalancePayload returns null expense when there are no expenses', () => {
+  const alice = buildUserBalancePayload('u1', users, []);
+
+  assert.equal(alice.balance, 0);
+  assert.equal(alice.settled, true);
+  assert.equal(alice.expense, null);
+});
+
+test('buildUserBalancePayload marks settled balances', () => {
+  const solo: Expense[] = [
     {
       id: 'e1',
       description: 'Solo',
@@ -44,27 +73,18 @@ test('buildBalanceMqttPayload marks settled balances with zero amount owed', () 
     },
   ];
 
-  const payload = buildBalanceMqttPayload(users, expenses);
+  const alice = buildUserBalancePayload('u1', users, solo);
+  const bob = buildUserBalancePayload('u2', users, solo);
 
-  assert.equal(payload.amount_owed, 0);
-  assert.equal(payload.settled, true);
+  assert.equal(alice.balance, 0);
+  assert.equal(alice.settled, true);
+  assert.equal(bob.balance, 0);
+  assert.equal(bob.settled, true);
 });
 
-test('buildBalanceMqttPayload includes up to five recent expenses for the debtor', () => {
-  const expenses: Expense[] = Array.from({ length: 7 }, (_, index) => ({
-    id: `e${index}`,
-    description: `Expense ${index}`,
-    amount: 10,
-    date: `2025-06-${String(index + 1).padStart(2, '0')}`,
-    paidBy: 'u2',
-    participants: ['u1', 'u2'],
-    shares: { u1: 0.5, u2: 0.5 },
-  }));
+test('topicForUser appends user id to the configured prefix', () => {
+  process.env.MQTT_TOPIC_PREFIX = 'coinshire/balance';
 
-  const payload = buildBalanceMqttPayload(users, expenses);
-
-  assert.equal(payload.name, 'Alice');
-  assert.equal(payload.amount_owed, 35);
-  assert.equal(payload.recent_expenses.length, 5);
-  assert.equal(payload.recent_expenses[0]?.description, 'Expense 6');
+  assert.equal(topicForUser('u1'), 'coinshire/balance/u1');
+  assert.equal(topicForUser('u2'), 'coinshire/balance/u2');
 });

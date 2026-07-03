@@ -52,7 +52,7 @@ async function getClient(): Promise<MqttClient> {
   return connecting;
 }
 
-export async function publishBalanceMessage(payload: unknown): Promise<void> {
+export async function publishMqttMessage(topic: string, payload: unknown): Promise<void> {
   const config = getMqttConfig();
   if (!config.enabled) return;
 
@@ -60,7 +60,7 @@ export async function publishBalanceMessage(payload: unknown): Promise<void> {
   const message = JSON.stringify(payload);
 
   await new Promise<void>((resolve, reject) => {
-    mqttClient.publish(config.topic, message, { qos: 1, retain: true }, (err) => {
+    mqttClient.publish(topic, message, { qos: 1, retain: true }, (err) => {
       if (err) reject(err);
       else resolve();
     });
